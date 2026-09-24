@@ -1,0 +1,1256 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CyberGuard | Payment Security</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <!-- Risk Timeline Styling -->
+    <style>
+        .trust-score { margin-top: 18px; padding: 16px 18px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: rgba(255,255,255,0.025); }
+        .trust-score-header { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+        .trust-score-label { font-size:0.72rem; font-weight:700; letter-spacing:0.08em; opacity:0.65; }
+        .trust-score-description { margin:4px 0 0; font-size:0.78rem; opacity:0.6; }
+        .trust-score-value { display:flex; align-items:baseline; gap:4px; white-space:nowrap; }
+        .trust-score-value strong { font-size:1.5rem; }
+        .trust-score-value span { font-size:0.72rem; opacity:0.5; }
+        .trust-score-bar { height:5px; margin-top:12px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,0.08); }
+        .trust-score-fill { height:100%; border-radius:99px; background:currentColor; }
+        .trust-score-status { margin-top:8px; font-size:0.7rem; font-weight:700; letter-spacing:0.06em; }
+        @media (max-width:600px) { .trust-score-header { align-items:flex-start; flex-direction:column; } }
+        .risk-timeline-card {
+            margin-top: 18px;
+        }
+
+        .risk-timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .risk-timeline-header h3 {
+            margin: 0;
+        }
+
+        .risk-timeline-header p {
+            margin: 4px 0 0;
+            opacity: 0.6;
+            font-size: 0.85rem;
+        }
+
+        .risk-timeline {
+            position: relative;
+            padding-left: 28px;
+        }
+
+        .risk-timeline::before {
+            content: "";
+            position: absolute;
+            left: 7px;
+            top: 8px;
+            bottom: 8px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 12px;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            left: -28px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #0b1020;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .timeline-marker.low { background: #22c55e; }
+        .timeline-marker.medium { background: #f59e0b; }
+        .timeline-marker.high { background: #f97316; }
+        .timeline-marker.critical { background: #ef4444; }
+
+        .timeline-content {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .timeline-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .timeline-risk {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .timeline-score {
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .timeline-description {
+            margin: 3px 0 0;
+            font-size: 0.78rem;
+            line-height: 1.35;
+            opacity: 0.68;
+        }
+
+        .timeline-date {
+            margin-top: 3px;
+            font-size: 0.68rem;
+            opacity: 0.45;
+        }
+
+        .timeline-toggle {
+            width: 100%;
+            margin-top: 16px;
+            padding: 11px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.035);
+            color: inherit;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .timeline-toggle:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .timeline-wrapper {
+            display: none;
+            margin-top: 18px;
+        }
+
+        @media (max-width: 600px) {
+            .risk-timeline-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .timeline-top {
+                align-items: flex-start;
+            }
+        }
+
+
+    </style>
+
+</head>
+
+
+<script>
+
+function toggleTimeline() {
+
+    const timeline = document.getElementById("risk-timeline-content");
+    const button = document.querySelector(".timeline-toggle");
+
+    if (timeline.style.display === "none" || timeline.style.display === "") {
+        timeline.style.display = "block";
+        button.textContent = "Hide risk timeline ↑";
+    } else {
+        timeline.style.display = "none";
+        button.textContent = "View risk timeline →";
+    }
+}
+
+function toggleHistory() {
+
+    const history = document.getElementById("full-history");
+
+    const button = document.querySelector(".view-history-btn");
+
+
+    if (history.style.display === "none") {
+
+        history.style.display = "block";
+
+        button.textContent = "Hide full activity ↑";
+
+    } else {
+
+        history.style.display = "none";
+
+        button.textContent = "View all activity →";
+
+    }
+
+}
+
+</script>
+
+
+<body>
+
+<div class="app">
+
+
+<!-- HEADER -->
+
+<header class="header">
+
+    <div class="brand">
+
+        <div class="shield">
+
+            <img
+                src="{{ url_for('static', filename='cyberguard-logo.png') }}"
+                alt="CyberGuard"
+            >
+
+        </div>
+
+        <div>
+
+            <h1>CyberGuard</h1>
+
+            <p>Payment Fraud Detection</p>
+
+        </div>
+
+    </div>
+
+
+    <div class="status">
+
+        <span class="status-dot"></span>
+
+        System Active
+
+    </div>
+
+</header>
+
+
+<!-- MAIN -->
+
+<main>
+
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+        <h2>
+
+            Protect your business<br>
+            before you pay.
+
+        </h2>
+
+        <p>
+
+            Analyze supplier payment requests and detect
+            suspicious banking changes before money leaves
+            your organization.
+
+        </p>
+
+    </section>
+
+
+    <!-- DASHBOARD -->
+
+    <section class="dashboard">
+
+        <div class="section-header">
+
+            <div>
+
+                <p class="eyebrow">SECURITY OVERVIEW</p>
+
+                <h2>Transaction Intelligence</h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-grid">
+
+
+            <div class="stat-card">
+
+                <span class="stat-label">
+                    TRANSACTIONS ANALYZED
+                </span>
+
+                <span class="stat-value">
+                    {{ stats.total_transactions }}
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span class="stat-label">
+                    HIGH / CRITICAL
+                </span>
+
+                <span class="stat-value">
+                    {{ stats.high_risk_transactions }}
+                </span>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <span class="stat-label">
+                    TRUSTED SUPPLIERS
+                </span>
+
+                <span class="stat-value">
+                    {{ stats.total_suppliers }}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="recent-transactions">
+
+            <div class="activity-header">
+
+                <div>
+
+                    <h3>Recent Security Activity</h3>
+
+                    <p>
+                        Showing the latest 5 transactions
+                    </p>
+
+                </div>
+
+
+                {% if all_recent_transactions|length > 5 %}
+
+                <button
+                    type="button"
+                    class="view-history-btn"
+                    onclick="toggleHistory()"
+                >
+                    View all activity →
+                </button>
+
+                {% endif %}
+
+            </div>
+
+
+            {% if recent_transactions %}
+
+                {% for transaction in recent_transactions %}
+
+                <div class="transaction-row">
+
+                    <div>
+
+                        <strong>
+                            {{ transaction[0] }}
+                        </strong>
+
+                        <small>
+                            Account:
+                            {{ transaction[3] or "Not provided" }}
+                        </small>
+
+                    </div>
+
+                    <div>
+
+                        <span>
+                            {{ transaction[1] }}/100
+                        </span>
+
+                        <strong>
+                            {{ transaction[2] }}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+
+                <!-- FULL HISTORY -->
+
+                <div
+                    id="full-history"
+                    class="full-history"
+                    style="display: none;"
+                >
+
+                    <div class="history-divider">
+                        Full Security Activity
+                    </div>
+
+                    {% for transaction in all_recent_transactions[5:] %}
+
+                    <div class="transaction-row">
+
+                        <div>
+
+                            <strong>
+                                {{ transaction[0] }}
+                            </strong>
+
+                            <small>
+                                Account:
+                                {{ transaction[3] or "Not provided" }}
+                            </small>
+
+                        </div>
+
+                        <div>
+
+                            <span>
+                                {{ transaction[1] }}/100
+                            </span>
+
+                            <strong>
+                                {{ transaction[2] }}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <p>No live transactions analyzed yet.</p>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ANALYSIS CARD -->
+
+    <section class="card">
+
+        <div class="card-header">
+
+            <div>
+
+                <h2>
+                    Analyze Payment Request
+                </h2>
+
+                <p>
+                    Verify the request against trusted supplier information.
+                </p>
+
+            </div>
+
+
+            <div class="step">
+                SECURITY CHECK
+            </div>
+
+        </div>
+
+
+        <form method="POST">
+
+            <label for="supplier">
+                Supplier
+            </label>
+
+
+            <select
+                name="supplier"
+                id="supplier"
+                required
+            >
+
+                {% for supplier in suppliers %}
+
+                    <option value="{{ supplier[1] }}">
+                        {{ supplier[1] }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+
+            <label for="message">
+                Payment Request
+            </label>
+
+
+            <textarea
+                name="message"
+                id="message"
+                placeholder="Paste the supplier email or payment request here..."
+                required
+            ></textarea>
+
+
+            <button type="submit">
+                🔍 Analyze Request
+            </button>
+
+        </form>
+
+    </section>
+
+
+    {% if result %}
+
+
+    <!-- SUPPLIER TRUST PROFILE -->
+
+    <section class="trust-card">
+
+        <div class="trust-header">
+
+            <div>
+
+                <p class="result-label">
+                    SUPPLIER TRUST PROFILE
+                </p>
+
+                <h2>
+                    {{ selected_supplier.name }}
+                </h2>
+
+            </div>
+
+
+            <div class="verified">
+
+                <span class="verified-dot"></span>
+
+                TRUSTED SUPPLIER
+
+            </div>
+
+        </div>
+
+
+        <div class="trust-grid">
+
+
+            <div class="trust-item">
+
+                <span>
+                    VERIFIED EMAIL
+                </span>
+
+                <strong>
+                    {{ selected_supplier.email }}
+                </strong>
+
+            </div>
+
+
+            <div class="trust-item">
+
+                <span>
+                    TRUSTED ACCOUNT
+                </span>
+
+                <strong>
+                    •••• {{ selected_supplier.account_last_four }}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        {% if result.requested_account %}
+
+        <div class="account-comparison">
+
+
+            <div>
+
+                <span>
+                    REQUESTED ACCOUNT
+                </span>
+
+                <strong>
+                    •••• {{ result.requested_account }}
+                </strong>
+
+            </div>
+
+
+            {% if result.requested_account == selected_supplier.account_last_four %}
+
+                <div class="match">
+                    ✓ MATCH
+                </div>
+
+            {% else %}
+
+                <div class="mismatch">
+                    ✕ MISMATCH
+                </div>
+
+            {% endif %}
+
+
+        </div>
+
+        {% else %}
+
+        <div class="account-comparison">
+
+            <div>
+
+                <span>
+                    REQUESTED ACCOUNT
+                </span>
+
+                <strong>
+                    Not provided
+                </strong>
+
+            </div>
+
+            <div class="mismatch">
+                ⚠ NOT VERIFIED
+            </div>
+
+        </div>
+
+        {% endif %}
+
+        {% if trust_score %}
+<div class="trust-score">
+    <div class="trust-score-header">
+        <div>
+            <div class="trust-score-label">SUPPLIER TRUST SCORE</div>
+            <p class="trust-score-description">
+                Based on the supplier's transaction history
+            </p>
+        </div>
+
+        <div class="trust-score-value">
+            <strong>{{ trust_score.score }}</strong>
+            <span>/100</span>
+        </div>
+    </div>
+
+    <div
+        class="trust-score-fill"
+        data-score="{{ trust_score.score }}"
+    >
+        <div class="trust-score-fill-inner"></div>
+    </div>
+
+    <div class="trust-score-status">
+        {{ trust_score.label }}
+    </div>
+</div>
+{% endif %}
+
+    </section>
+
+
+    <!-- RISK TIMELINE -->
+
+    {% if risk_trend %}
+
+    <section class="card risk-timeline-card">
+
+        <div class="risk-timeline-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    SUPPLIER HISTORY
+                </p>
+
+                <h3>
+                    Risk Timeline
+                </h3>
+
+                <p>
+                    Historical risk progression for {{ selected_supplier.name }}
+                </p>
+
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            class="timeline-toggle"
+            onclick="toggleTimeline()"
+        >
+            View risk timeline →
+        </button>
+
+        <div
+            id="risk-timeline-content"
+            class="timeline-wrapper"
+        >
+
+            <div class="risk-timeline">
+
+                {% for transaction in risk_trend|reverse %}
+
+                <div class="timeline-item">
+
+                    <div
+                        class="timeline-marker
+                        {% if transaction[1] == 'CRITICAL' %}
+                            critical
+                        {% elif transaction[1] == 'HIGH' %}
+                            high
+                        {% elif transaction[1] == 'MEDIUM' %}
+                            medium
+                        {% else %}
+                            low
+                        {% endif %}"
+                    ></div>
+
+                    <div class="timeline-content">
+
+                        <div class="timeline-top">
+
+                            <span class="timeline-risk">
+                                {{ transaction[1] }}
+                            </span>
+
+                            <span class="timeline-score">
+                                {{ transaction[0] }}/100
+                            </span>
+
+                        </div>
+
+                        <p class="timeline-description">
+                            {% if transaction[1] == "CRITICAL" %}
+                                Critical payment risk detected.
+                            {% elif transaction[1] == "HIGH" %}
+                                Multiple security indicators detected.
+                            {% elif transaction[1] == "MEDIUM" %}
+                                Suspicious indicators detected.
+                            {% else %}
+                                No major risk indicators detected.
+                            {% endif %}
+                        </p>
+
+                        <div class="timeline-date">
+                            {{ transaction[2] }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+    {% endif %}
+
+
+    <!-- SECURITY RESULTS -->
+
+    <section class="results">
+
+
+        <div class="result-top">
+
+            <div>
+
+                <p class="result-label">
+                    SECURITY ASSESSMENT
+                </p>
+
+                <h2 class="risk-title">
+                    {{ result.risk_level }}
+                </h2>
+
+            </div>
+
+
+            <div class="score">
+
+                <span>
+                    RISK SCORE
+                </span>
+
+                <strong>
+                    {{ result.score }}
+                </strong>
+
+                <small>
+                    / 100
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- RISK INTELLIGENCE -->
+
+        <div class="analysis-section">
+
+            <h3>
+                🧠 Risk Intelligence
+            </h3>
+
+            <p class="analysis-description">
+
+                CyberGuard identified the following signals contributing
+                to this assessment.
+
+            </p>
+
+
+            <!-- BEHAVIOURAL ANALYSIS -->
+
+            {% if result and result.pattern_deviations %}
+
+            <div class="behaviour-card">
+
+                <div class="behaviour-header">
+
+                    <div>
+
+                        <p class="eyebrow">
+                            ADAPTIVE SUPPLIER INTELLIGENCE
+                        </p>
+
+                        <h3>
+                            Behavioural Analysis
+                        </h3>
+
+                    </div>
+
+                    <span class="deviation-badge">
+
+                        {{ result.pattern_deviations|length }}
+                        DEVIATIONS
+
+                    </span>
+
+                </div>
+
+
+                <p class="behaviour-description">
+
+                    CyberGuard compared this request against the supplier's
+                    established historical behaviour.
+
+                </p>
+
+
+                {% for deviation in result.pattern_deviations %}
+
+                <div class="deviation-row">
+
+                    <div class="deviation-icon">
+                        !
+                    </div>
+
+
+                    <div class="deviation-content">
+
+                        <strong>
+                            {{ deviation.type }}
+                        </strong>
+
+
+                        {% if deviation.type == "Account change" %}
+
+                        <p>
+
+                            Normal account:
+
+                            <strong>
+                                {{ deviation.normal }}
+                            </strong>
+
+                            →
+
+                            Current request:
+
+                            <strong>
+                                {{ deviation.current }}
+                            </strong>
+
+                        </p>
+
+
+                        {% elif deviation.type == "Banking detail change" %}
+
+                        <p>
+
+                            Banking details differ from the supplier's
+                            established behaviour.
+
+                        </p>
+
+
+                        {% elif deviation.type == "Urgency change" %}
+
+                        <p>
+
+                            This request uses unusual urgency compared
+                            with the supplier's normal communication.
+
+                        </p>
+
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- AI ASSESSMENT -->
+
+            {% if result and result.ai_assessment %}
+
+            <div class="ai-card">
+
+                <div class="ai-header">
+
+                    <div>
+
+                        <p class="eyebrow">
+                            AI-POWERED ANALYSIS
+                        </p>
+
+                        <h3>
+                            AI Assessment
+                        </h3>
+
+                    </div>
+
+
+                    <span class="ai-confidence">
+
+                        {{ result.ai_confidence }}
+                        CONFIDENCE
+
+                    </span>
+
+
+                    {% if result.ai_threat_type %}
+
+                    <div class="ai-threat-type">
+
+                        <span>
+                            THREAT CLASSIFICATION
+                        </span>
+
+                        <strong>
+                            {{ result.ai_threat_type }}
+                        </strong>
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <p class="ai-assessment">
+
+                    {{ result.ai_assessment }}
+
+                </p>
+
+
+                {% if result.ai_indicators %}
+
+                <div class="ai-indicators">
+
+                    {% for indicator in result.ai_indicators %}
+
+                    <div class="ai-indicator">
+
+                        <span>
+                            !
+                        </span>
+
+                        <p>
+                            {{ indicator }}
+                        </p>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- RISK FACTORS -->
+
+            <div class="risk-factors">
+
+                {% for factor in result.factors %}
+
+                <div class="risk-factor">
+
+                    <div class="factor-name">
+
+                        <span class="factor-icon">
+                            !
+                        </span>
+
+                        {{ factor.name }}
+
+                    </div>
+
+                    <strong>
+                        +{{ factor.points }}
+                    </strong>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <div class="score-breakdown">
+
+                <span>
+                    TOTAL RISK SCORE
+                </span>
+
+                <strong>
+                    {{ result.score }}/100
+                </strong>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- RECOMMENDATION -->
+
+        {% if result.score >= 80 %}
+
+        <div class="recommendation danger">
+
+            <div class="recommendation-icon">
+                🚨
+            </div>
+
+            <div>
+
+                <h3>
+                    DO NOT PAY YET
+                </h3>
+
+                <p>
+
+                    This request contains significant indicators
+                    of payment fraud. Independently verify the
+                    banking details using a trusted supplier
+                    contact before making payment.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        {% elif result.score >= 60 %}
+
+        <div class="recommendation danger">
+
+            <div class="recommendation-icon">
+                🟠
+            </div>
+
+            <div>
+
+                <h3>
+                    PAYMENT VERIFICATION REQUIRED
+                </h3>
+
+                <p>
+
+                    This request contains multiple risk indicators.
+                    Verify the payment details and supplier identity
+                    through a trusted communication channel before
+                    making payment.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        {% elif result.score >= 30 %}
+
+        <div class="recommendation danger">
+
+            <div class="recommendation-icon">
+                ⚠️
+            </div>
+
+            <div>
+
+                <h3>
+                    VERIFY BEFORE PAYMENT
+                </h3>
+
+                <p>
+
+                    This request contains some suspicious indicators.
+                    Confirm the payment details with the supplier
+                    through a trusted communication channel before
+                    proceeding.
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+        {% else %}
+
+        <div class="recommendation safe">
+
+            <div class="recommendation-icon">
+                ✅
+            </div>
+
+            <div>
+
+                <h3>
+                    NO MAJOR THREATS DETECTED
+                </h3>
+
+                <p>
+
+                    No significant warning signs were detected
+                    in this payment request.
+
+                </p>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+
+        <div class="result-footer">
+
+            <span>
+                🛡️ CyberGuard Risk Engine
+            </span>
+
+            <span>
+                Automated assessment • Human verification recommended
+            </span>
+
+        </div>
+
+
+    </section>
+
+    {% endif %}
+
+
+</main>
+
+
+<footer>
+
+    <span>
+        CyberGuard
+    </span>
+
+    <span>
+        Secure payments. Smarter decisions.
+    </span>
+
+</footer>
+
+
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const fill = document.querySelector(".trust-score-fill");
+
+    if (fill) {
+        const score = fill.dataset.score;
+        const inner = fill.querySelector(".trust-score-fill-inner");
+
+        if (inner) {
+            inner.style.width = score + "%";
+        }
+    }
+});
+</script>
+</body>
+
+</html>
+
