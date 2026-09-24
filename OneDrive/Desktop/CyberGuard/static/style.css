@@ -1,0 +1,1148 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f7fb;
+    color: #172033;
+}
+
+
+/* =========================
+   APP
+========================= */
+
+.app {
+    min-height: 100vh;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    height: 80px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e9f0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 7%;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shield {
+    width: 44px;
+    height: 44px;
+
+    background: #172033;
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    font-size: 22px;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.brand p {
+    margin: 3px 0 0;
+    color: #778198;
+    font-size: 12px;
+}
+
+.status {
+    font-size: 13px;
+    color: #536078;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+
+    background: #20a464;
+
+    border-radius: 50%;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+main {
+    width: 90%;
+    max-width: 1000px;
+
+    margin: auto;
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+.hero {
+    padding: 55px 0 35px;
+}
+
+.hero h2 {
+    font-size: 42px;
+    line-height: 1.1;
+
+    margin: 0 0 15px;
+
+    letter-spacing: -1px;
+}
+
+.hero p {
+    max-width: 650px;
+
+    color: #69758b;
+
+    font-size: 17px;
+    line-height: 1.6;
+
+    margin: 0;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.card {
+    background: white;
+
+    border: 1px solid #e3e8f0;
+
+    border-radius: 14px;
+
+    padding: 32px;
+
+    box-shadow: 0 8px 30px rgba(23, 32, 51, 0.05);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+
+    margin-bottom: 28px;
+}
+
+.card-header h2 {
+    margin: 0 0 7px;
+
+    font-size: 22px;
+}
+
+.card-header p {
+    margin: 0;
+
+    color: #7a8497;
+
+    font-size: 14px;
+}
+
+.step {
+    font-size: 11px;
+    font-weight: bold;
+
+    color: #69758b;
+
+    background: #f1f4f8;
+
+    padding: 8px 12px;
+
+    border-radius: 6px;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    font-size: 14px;
+    font-weight: bold;
+
+    color: #354056;
+}
+
+select,
+textarea {
+    width: 100%;
+
+    border: 1px solid #d9dfe8;
+
+    border-radius: 8px;
+
+    font-family: inherit;
+
+    font-size: 15px;
+
+    background: #ffffff;
+}
+
+select {
+    height: 48px;
+
+    padding: 0 12px;
+
+    margin-bottom: 22px;
+}
+
+textarea {
+    min-height: 190px;
+
+    padding: 15px;
+
+    resize: vertical;
+
+    margin-bottom: 18px;
+}
+
+select:focus,
+textarea:focus {
+    outline: none;
+
+    border-color: #172033;
+
+    box-shadow: 0 0 0 3px rgba(23, 32, 51, 0.08);
+}
+
+
+/* =========================
+   BUTTON
+========================= */
+
+button {
+    width: 100%;
+
+    height: 50px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #172033;
+
+    color: white;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: translateY(-1px);
+
+    box-shadow: 0 6px 15px rgba(23, 32, 51, 0.2);
+}
+
+
+/* =========================
+   RESULTS
+========================= */
+
+.results {
+    background: white;
+
+    margin-top: 25px;
+
+    border: 1px solid #e3e8f0;
+
+    border-radius: 14px;
+
+    overflow: hidden;
+
+    box-shadow: 0 8px 30px rgba(23, 32, 51, 0.05);
+}
+
+.result-top {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 30px;
+
+    border-bottom: 1px solid #edf0f4;
+}
+
+.result-label {
+    margin: 0 0 7px;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    color: #8a94a7;
+}
+
+.risk-title {
+    margin: 0;
+
+    font-size: 34px;
+
+    letter-spacing: 1px;
+}
+
+.score {
+    text-align: right;
+}
+
+.score span {
+    display: block;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    color: #8a94a7;
+}
+
+.score strong {
+    font-size: 48px;
+
+    line-height: 1;
+}
+
+.score small {
+    font-size: 15px;
+
+    color: #8993a5;
+}
+
+
+/* =========================
+   ANALYSIS
+========================= */
+
+.analysis-section {
+    padding: 28px 30px;
+}
+
+.analysis-section h3 {
+    margin: 0 0 18px;
+
+    font-size: 17px;
+}
+
+.warning {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 13px;
+
+    margin-bottom: 9px;
+
+    background: #f8f9fb;
+
+    border-radius: 7px;
+
+    font-size: 14px;
+
+    color: #465167;
+}
+
+.warning-icon {
+    width: 23px;
+    height: 23px;
+
+    border-radius: 50%;
+
+    background: #172033;
+
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+/* =========================
+   RECOMMENDATION
+========================= */
+
+.recommendation {
+    margin: 0 30px 25px;
+
+    padding: 22px;
+
+    border-radius: 9px;
+
+    display: flex;
+
+    gap: 15px;
+
+    align-items: flex-start;
+}
+
+.recommendation.danger {
+    background: #fff4f2;
+
+    border: 1px solid #ffd9d4;
+}
+
+.recommendation.safe {
+    background: #f1faf5;
+
+    border: 1px solid #d5f0df;
+}
+
+.recommendation-icon {
+    font-size: 25px;
+}
+
+.recommendation h3 {
+    margin: 0 0 7px;
+
+    font-size: 15px;
+}
+
+.recommendation p {
+    margin: 0;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+    color: #687387;
+}
+
+
+/* =========================
+   RESULT FOOTER
+========================= */
+
+.result-footer {
+    border-top: 1px solid #edf0f4;
+
+    padding: 15px 30px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    font-size: 11px;
+
+    color: #929bad;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+footer {
+    width: 90%;
+    max-width: 1000px;
+
+    margin: 35px auto;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    font-size: 12px;
+
+    color: #929bad;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 700px) {
+
+    .header {
+        padding: 0 5%;
+    }
+
+    .status {
+        display: none;
+    }
+
+    main {
+        width: 92%;
+    }
+
+    .hero {
+        padding-top: 35px;
+    }
+
+    .hero h2 {
+        font-size: 32px;
+    }
+
+    .card {
+        padding: 22px;
+    }
+
+    .card-header {
+        display: block;
+    }
+
+    .step {
+        display: inline-block;
+
+        margin-top: 15px;
+    }
+
+    .result-top {
+        padding: 22px;
+    }
+
+    .risk-title {
+        font-size: 28px;
+    }
+
+    .score strong {
+        font-size: 38px;
+    }
+
+    .analysis-section {
+        padding: 22px;
+    }
+
+    .recommendation {
+        margin: 0 22px 22px;
+    }
+
+    .result-footer {
+        display: block;
+
+        line-height: 1.7;
+    }
+
+    footer {
+        display: block;
+
+        line-height: 2;
+    }
+}
+
+.trust-card {
+    background: white;
+
+    margin-top: 25px;
+
+    border: 1px solid #e3e8f0;
+
+    border-radius: 14px;
+
+    padding: 28px 30px;
+
+    box-shadow: 0 8px 30px rgba(23, 32, 51, 0.05);
+}
+
+
+.trust-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 25px;
+}
+
+
+.trust-header h2 {
+    margin: 5px 0 0;
+
+    font-size: 24px;
+}
+
+
+.verified {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 8px 12px;
+
+    background: #f1faf5;
+
+    border: 1px solid #d5f0df;
+
+    border-radius: 6px;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    color: #23764a;
+}
+
+
+.verified-dot {
+    width: 8px;
+
+    height: 8px;
+
+    background: #20a464;
+
+    border-radius: 50%;
+}
+
+
+.trust-grid {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 15px;
+}
+
+
+.trust-item {
+    padding: 16px;
+
+    background: #f8f9fb;
+
+    border-radius: 8px;
+}
+
+
+.trust-item span,
+.account-comparison span {
+    display: block;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 0.8px;
+
+    color: #8993a5;
+
+    margin-bottom: 7px;
+}
+
+
+.trust-item strong {
+    font-size: 14px;
+
+    color: #354056;
+}
+
+
+.account-comparison {
+    margin-top: 15px;
+
+    padding: 17px;
+
+    border: 1px dashed #d9dfe8;
+
+    border-radius: 8px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+
+.account-comparison strong {
+    font-size: 16px;
+}
+
+
+.match {
+    padding: 7px 12px;
+
+    border-radius: 6px;
+
+    background: #f1faf5;
+
+    color: #23764a;
+
+    font-size: 11px;
+
+    font-weight: bold;
+}
+
+
+.mismatch {
+    padding: 7px 12px;
+
+    border-radius: 6px;
+
+    background: #fff4f2;
+
+    color: #b33a2e;
+
+    font-size: 11px;
+
+    font-weight: bold;
+}
+
+
+@media (max-width: 700px) {
+
+    .trust-header {
+        display: block;
+    }
+
+    .verified {
+        display: inline-flex;
+
+        margin-top: 12px;
+    }
+
+    .trust-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-comparison {
+        display: block;
+    }
+
+    .match,
+    .mismatch {
+        display: inline-block;
+
+        margin-top: 12px;
+    }
+
+}
+/* =========================
+   RISK INTELLIGENCE
+========================= */
+
+.analysis-description {
+    margin: -8px 0 20px;
+
+    color: #7a8497;
+
+    font-size: 13px;
+}
+
+
+.risk-factors {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+
+.risk-factor {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 14px 16px;
+
+    background: #f8f9fb;
+
+    border-radius: 8px;
+}
+
+
+.factor-name {
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    font-size: 14px;
+
+    color: #465167;
+}
+
+
+.factor-icon {
+    width: 24px;
+
+    height: 24px;
+
+    border-radius: 50%;
+
+    background: #172033;
+
+    color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 12px;
+
+    font-weight: bold;
+}
+
+
+.risk-factor strong {
+    font-size: 14px;
+
+    color: #b33a2e;
+}
+
+
+.score-breakdown {
+    margin-top: 15px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid #e5e9f0;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+}
+
+
+.score-breakdown span {
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 0.8px;
+
+    color: #8993a5;
+}
+
+
+.score-breakdown strong {
+    font-size: 22px;
+}
+
+.dashboard {
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+
+.section-header {
+    margin-bottom: 20px;
+}
+
+.eyebrow {
+    font-size: 12px;
+    letter-spacing: 2px;
+    opacity: 0.6;
+    margin-bottom: 6px;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    padding: 24px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1px;
+    opacity: 0.6;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.recent-transactions {
+    padding: 24px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+}
+
+.transaction-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.transaction-row:last-child {
+    border-bottom: none;
+}
+
+.transaction-row small {
+    display: block;
+    margin-top: 4px;
+    opacity: 0.5;
+}
+
+.transaction-row strong:last-child {
+    margin-left: 12px;
+}
+
+/* =================================
+   BEHAVIOURAL INTELLIGENCE
+================================= */
+
+.behaviour-card {
+    margin-top: 24px;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+}
+
+.behaviour-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.behaviour-header h3 {
+    margin: 0;
+}
+
+.deviation-badge {
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: rgba(255, 80, 80, 0.12);
+}
+
+.behaviour-description {
+    opacity: 0.6;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.deviation-row {
+    display: flex;
+    gap: 14px;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.deviation-icon {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    background: rgba(255, 80, 80, 0.12);
+}
+
+.deviation-content strong {
+    font-size: 14px;
+}
+
+.deviation-content p {
+    margin: 5px 0 0;
+    font-size: 13px;
+    opacity: 0.6;
+}
+
+/* AI Analysis */
+
+.ai-card {
+    margin-top: 24px;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+}
+
+.ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.ai-header h3 {
+    margin: 0;
+}
+
+.ai-confidence {
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: rgba(100, 150, 255, 0.12);
+}
+
+.ai-assessment {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+.ai-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ai-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.ai-indicator span {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    background: rgba(100, 150, 255, 0.12);
+}
+
+.ai-indicator p {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* ==========================================
+   RECENT SECURITY ACTIVITY
+   ========================================== */
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.activity-header h3 {
+    margin-bottom: 5px;
+}
+
+.activity-header p {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.55;
+}
+
+.view-history-btn {
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 0;
+}
+
+.view-history-btn:hover {
+    opacity: 0.7;
+}
+
+.full-history {
+    margin-top: 10px;
+}
+
+.history-divider {
+    padding: 18px 0 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    opacity: 0.5;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ==========================================
+   AI THREAT CLASSIFICATION
+   ========================================== */
+
+.ai-threat-type {
+    margin: 18px 0;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.025);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.ai-threat-type span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    opacity: 0.5;
+}
+
+.ai-threat-type strong {
+    font-size: 13px;
+    font-weight: 700;
+}
