@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CyberGuard | Payment Fraud Detection</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0b0f14;
+            color: #f5f7fa;
+        }
+
+        .container {
+            width: min(1180px, 92%);
+            margin: 0 auto;
+        }
+
+        header {
+            padding: 32px 0 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand img {
+            width: 52px;
+            height: 52px;
+            object-fit: contain;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            opacity: 0.55;
+            font-size: 0.85rem;
+        }
+
+        .status {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(34,197,94,0.08);
+            border: 1px solid rgba(34,197,94,0.2);
+            color: #22c55e;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        .hero {
+            padding: 34px 0 24px;
+        }
+
+        .hero h2 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        .hero p {
+            max-width: 720px;
+            line-height: 1.6;
+            opacity: 0.65;
+        }
+
+        .section {
+            margin-top: 28px;
+        }
+
+        .section-title {
+            margin-bottom: 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            opacity: 0.55;
+        }
+
+        .business-context-card {
+            padding: 22px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.025);
+        }
+
+        .business-context-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .business-context-header h2 {
+            margin: 0;
+        }
+
+        .business-context-header p {
+            margin: 5px 0 0;
+            opacity: 0.6;
+            font-size: 0.82rem;
+            line-height: 1.45;
+        }
+
+        .business-identity {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .business-identity-item {
+            flex: 1 1 220px;
+            padding: 13px 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .business-identity-label {
+            display: block;
+            font-size: 0.61rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            opacity: 0.5;
+        }
+
+        .business-identity-value {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .business-security-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .business-security-stat {
+            padding: 13px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .business-security-stat-label {
+            display: block;
+            font-size: 0.61rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            opacity: 0.5;
+        }
+
+        .business-security-stat-value {
+            display: block;
+            margin-top: 5px;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .business-security-stat.pending {
+            border-color: rgba(245,158,11,0.15);
+        }
+
+        .business-security-stat.pending .business-security-stat-value {
+            color: #f59e0b;
+        }
+
+        .business-security-stat.danger {
+            border-color: rgba(239,68,68,0.15);
+        }
+
+        .business-security-stat.danger .business-security-stat-value {
+            color: #ef4444;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.025);
+        }
+
+        .card-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            opacity: 0.5;
+        }
+
+        .card-value {
+            margin-top: 8px;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        .danger {
+            color: #ef4444;
+        }
+
+        .warning {
+            color: #f59e0b;
+        }
+
+        .success {
+            color: #22c55e;
+        }
+
+        .scanner {
+            padding: 22px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.025);
+        }
+
+        .scanner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .scanner-header h2 {
+            margin: 0;
+        }
+
+        .scanner-header p {
+            margin: 5px 0 0;
+            opacity: 0.55;
+            font-size: 0.8rem;
+        }
+
+        .scan-button {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: #f5f7fa;
+            color: #0b0f14;
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .scan-button:hover {
+            opacity: 0.9;
+        }
+
+        .scanner-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .scanner-stat {
+            padding: 13px;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+        }
+
+        .scanner-stat span {
+            display: block;
+            font-size: 0.62rem;
+            opacity: 0.5;
+            font-weight: 700;
+        }
+
+        .scanner-stat strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 1.1rem;
+        }
+
+        .investigation {
+            margin-top: 14px;
+            padding: 18px;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .investigation-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .investigation h3 {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .investigation p {
+            margin: 7px 0 0;
+            opacity: 0.6;
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 0.62rem;
+            font-weight: 800;
+        }
+
+        .badge-high {
+            color: #f59e0b;
+            background: rgba(245,158,11,0.1);
+        }
+
+        .badge-critical {
+            color: #ef4444;
+            background: rgba(239,68,68,0.1);
+        }
+
+        .empty {
+            padding: 24px;
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 12px;
+            opacity: 0.5;
+            text-align: center;
+        }
+
+        footer {
+            padding: 40px 0;
+            opacity: 0.35;
+            font-size: 0.72rem;
+        }
+
+        @media (max-width: 900px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .business-security-grid,
+            .scanner-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .brand {
+                flex-wrap: wrap;
+            }
+
+            .status {
+                margin-left: 0;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .business-context-header,
+            .scanner-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .business-security-grid,
+            .scanner-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <div class="brand">
+
+            {% if business %}
+                <div>
+                    <h1>CyberGuard</h1>
+                    <p>Payment Fraud Detection · {{ business.name }}</p>
+                </div>
+            {% else %}
+                <div>
+                    <h1>CyberGuard</h1>
+                    <p>Payment Fraud Detection</p>
+                </div>
+            {% endif %}
+
+            <div class="status">
+                <span class="status-dot"></span>
+                SYSTEM ACTIVE
+            </div>
+
+        </div>
+    </header>
+
+
+    <section class="hero">
+
+        <h2>Protect your business before you pay.</h2>
+
+        <p>
+            Analyze supplier payment requests and detect suspicious
+            banking changes before money leaves your organization.
+        </p>
+
+    </section>
+
+
+    <!-- =====================================================
+         BUSINESS SECURITY CONTEXT
+    ====================================================== -->
+
+    <section class="section">
+
+        <div class="section-title">
+            BUSINESS SECURITY CONTEXT
+        </div>
+
+        <div class="business-context-card">
+
+            <div class="business-context-header">
+
+                <div>
+                    <h2>
+                        {% if business %}
+                            {{ business.name }}
+                        {% else %}
+                            Business Profile
+                        {% endif %}
+                    </h2>
+
+                    <p>
+                        Business-owned security context for this CyberGuard deployment.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="business-identity">
+
+                <div class="business-identity-item">
+
+                    <span class="business-identity-label">
+                        BUSINESS ID
+                    </span>
+
+                    <span class="business-identity-value">
+                        {{ business_id if business_id else "—" }}
+                    </span>
+
+                </div>
+
+
+                <div class="business-identity-item">
+
+                    <span class="business-identity-label">
+                        GMAIL ACCOUNT
+                    </span>
+
+                    <span class="business-identity-value">
+                        {{ business_gmail if business_gmail else "Not connected" }}
+                    </span>
+
+                </div>
+
+
+                <div class="business-identity-item">
+
+                    <span class="business-identity-label">
+                        LINKED SUPPLIERS
+                    </span>
+
+                    <span class="business-identity-value">
+                        {{ business_security.linked_suppliers if business_security else 0 }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="business-security-grid">
+
+                <div class="business-security-stat">
+
+                    <span class="business-security-stat-label">
+                        TRANSACTIONS
+                    </span>
+
+                    <span class="business-security-stat-value">
+                        {{ business_security.total_transactions if business_security else 0 }}
+                    </span>
+
+                </div>
+
+
+                <div class="business-security-stat danger">
+
+                    <span class="business-security-stat-label">
+                        HIGH RISK
+                    </span>
+
+                    <span class="business-security-stat-value">
+                        {{ business_security.high_risk if business_security else 0 }}
+                    </span>
+
+                </div>
+
+
+                <div class="business-security-stat danger">
+
+                    <span class="business-security-stat-label">
+                        CRITICAL
+                    </span>
+
+                    <span class="business-security-stat-value">
+                        {{ business_security.critical if business_security else 0 }}
+                    </span>
+
+                </div>
+
+
+                <div class="business-security-stat pending">
+
+                    <span class="business-security-stat-label">
+                        PENDING INVESTIGATIONS
+                    </span>
+
+                    <span class="business-security-stat-value">
+                        {{ business_security.pending_investigations if business_security else 0 }}
+                    </span>
+
+                </div>
+
+
+                <div class="business-security-stat">
+
+                    <span class="business-security-stat-label">
+                        SUPPLIERS
+                    </span>
+
+                    <span class="business-security-stat-value">
+                        {{ business_security.linked_suppliers if business_security else 0 }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SECURITY OVERVIEW
+    ====================================================== -->
+
+    <section class="section">
+
+        <div class="section-title">
+            SECURITY OVERVIEW
+        </div>
+
+        <div class="cards">
+
+            <div class="card">
+
+                <div class="card-label">
+                    TRANSACTIONS ANALYZED
+                </div>
+
+                <div class="card-value">
+                    {{ stats.total if stats else 0 }}
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="card-label">
+                    HIGH / CRITICAL
+                </div>
+
+                <div class="card-value danger">
+                    {{ stats.high_risk if stats else 0 }}
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="card-label">
+                    TRUSTED SUPPLIERS
+                </div>
+
+                <div class="card-value success">
+                    {{ suppliers|length if suppliers else 0 }}
+                </div>
+
+            </div>
+
+
+            <div class="card">
+
+                <div class="card-label">
+                    PENDING INVESTIGATIONS
+                </div>
+
+                <div class="card-value warning">
+                    {{ pending_investigations|length if pending_investigations else 0 }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         GMAIL SECURITY SCANNER
+    ====================================================== -->
+
+    <section class="section">
+
+        <div class="section-title">
+            LIVE EMAIL INGESTION
+        </div>
+
+        <div class="scanner">
+
+            <div class="scanner-header">
+
+                <div>
+                    <h2>Gmail Security Scanner</h2>
+
+                    <p>
+                        Payment-related emails are triaged before entering
+                        the deterministic risk engine.
+                    </p>
+                </div>
+
+                <a class="scan-button" href="/scan-email">
+                    SCAN GMAIL
+                </a>
+
+            </div>
+
+
+            {% if scan_stats %}
+
+            <div class="scanner-stats">
+
+                <div class="scanner-stat">
+                    <span>SCANNED</span>
+                    <strong>{{ scan_stats.scanned }}</strong>
+                </div>
+
+                <div class="scanner-stat">
+                    <span>ANALYZED</span>
+                    <strong>{{ scan_stats.analyzed }}</strong>
+                </div>
+
+                <div class="scanner-stat">
+                    <span>ALREADY PROCESSED</span>
+                    <strong>{{ scan_stats.skipped }}</strong>
+                </div>
+
+                <div class="scanner-stat">
+                    <span>STOPPED</span>
+                    <strong>{{ scan_stats.stopped }}</strong>
+                </div>
+
+                <div class="scanner-stat">
+                    <span>HELD</span>
+                    <strong>{{ scan_stats.held }}</strong>
+                </div>
+
+            </div>
+
+            {% else %}
+
+            <div class="empty">
+                No Gmail scan has been run in this session.
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         HUMAN INVESTIGATION
+    ====================================================== -->
+
+    <section class="section">
+
+        <div class="section-title">
+            HUMAN INVESTIGATION
+        </div>
+
+        <div class="scanner">
+
+            <div class="scanner-header">
+
+                <div>
+                    <h2>Held for Review</h2>
+
+                    <p>
+                        Emails requiring human judgement before a payment
+                        decision is made.
+                    </p>
+                </div>
+
+                <strong class="warning">
+                    {{ pending_investigations|length if pending_investigations else 0 }}
+                    PENDING
+                </strong>
+
+            </div>
+
+
+            {% if pending_investigations %}
+
+                {% for investigation in pending_investigations %}
+
+                <div class="investigation">
+
+                    <div class="investigation-top">
+
+                        <div>
+
+                            <h3>
+                                {{ investigation.subject or "Payment Investigation" }}
+                            </h3>
+
+                            <p>
+                                From:
+                                {{ investigation.sender or "Unknown sender" }}
+                            </p>
+
+                        </div>
+
+
+                        {% if investigation.risk_score is defined %}
+
+                            {% if investigation.risk_score >= 80 %}
+
+                                <span class="badge badge-critical">
+                                    CRITICAL · {{ investigation.risk_score }}
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge badge-high">
+                                    HIGH · {{ investigation.risk_score }}
+                                </span>
+
+                            {% endif %}
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty">
+                    No investigations currently require human review.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SUPPLIER CONTEXT
+    ====================================================== -->
+
+    <section class="section">
+
+        <div class="section-title">
+            SUPPLIER SECURITY CONTEXT
+        </div>
+
+        <div class="scanner">
+
+            {% if business_suppliers %}
+
+                {% for supplier in business_suppliers %}
+
+                <div class="investigation">
+
+                    <div class="investigation-top">
+
+                        <div>
+
+                            <h3>
+                                {{ supplier.name }}
+                            </h3>
+
+                            <p>
+                                {{ supplier.email }}
+                            </p>
+
+                        </div>
+
+                        {% if supplier.account_last_four %}
+
+                        <span class="badge">
+                            ACCOUNT •••• {{ supplier.account_last_four }}
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty">
+                    No suppliers are currently linked to this business.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <footer>
+        CyberGuard · Payment Fraud Detection · Business Security Intelligence
+    </footer>
+
+</div>
+
+</body>
+</html>

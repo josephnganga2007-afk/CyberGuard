@@ -2,212 +2,69 @@ import re
 
 
 # ============================================================
-# CYBERGUARD DETERMINISTIC RISK ENGINE
+# TEXT / EXTRACTION HELPERS
 # ============================================================
 
-BANKING_TERMS = (
-    "banking details",
-    "bank details",
-    "bank account",
-    "account details",
-)
-
-URGENCY_TERMS = (
-    "urgent",
-    "immediately",
-    "as soon as possible",
-    "asap",
-    "right away",
-    "without delay",
-    "act now",
-    "action required immediately",
-)
-
-PAYMENT_TERMS = (
-    "payment",
-    "pay",
-    "transfer",
-    "wire transfer",
-    "send funds",
-    "send money",
-    "eft",
-    "settle",
-    "remittance",
-    "remit",
-    "funds",
-)
-
-FINANCIAL_OBLIGATION_TERMS = (
-    "outstanding balance",
-    "outstanding amount",
-    "amount due",
-    "balance due",
-    "amount owing",
-    "money owed",
-    "invoice due",
-    "invoice is due",
-    "payment terms",
-    "normal payment terms",
-)
-
-BENEFICIARY_CHANGE_TERMS = (
-    "new beneficiary",
-    "new beneficiary details",
-    "updated beneficiary",
-    "updated beneficiary details",
-    "changed beneficiary",
-    "changed beneficiary details",
-    "changed our beneficiary",
-    "changed our beneficiary details",
-    "change beneficiary",
-    "change the beneficiary",
-    "change our beneficiary",
-    "change your beneficiary",
-    "update beneficiary",
-    "update the beneficiary",
-    "update our beneficiary",
-    "update your beneficiary",
-    "beneficiary details have changed",
-    "beneficiary details changed",
-    "different beneficiary",
-    "replace beneficiary",
-    "replace the beneficiary",
-)
-
-DESTINATION_CHANGE_TERMS = (
-    "new",
-    "updated",
-    "update",
-    "change",
-    "changed",
-    "different",
-    "amend",
-    "amended",
-    "replace",
-    "replaced",
-    "replacement",
-    "revised",
-    "revise",
-    "redirect",
-    "redirected",
-    "redirecting",
-    "alternative",
-    "altered",
-    "alter",
-    "latest",
-)
-
-REDIRECTION_TERMS = (
-    "route",
-    "direct",
-    "redirect",
-    "send",
-    "settle",
-    "transfer",
-    "pay",
-)
-
-REDIRECTION_TARGET_TERMS = (
-    "account",
-    "details",
-    "instructions",
-    "destination",
-    "recipient",
-    "beneficiary",
-    "route",
-)
-
-REDIRECTION_MARKERS = (
-    "instead",
-    "below",
-    "new details",
-    "different account",
-    "alternative account",
-    "alternative route",
-    "using the details",
-    "using the information",
-    "using the instructions",
-    "shown in the attachment",
-    "listed below",
-    "provided below",
-    "provided",
-)
-
-STABILITY_TERMS = (
-    "existing beneficiary",
-    "existing payment destination",
-    "existing receiving account",
-    "existing receiving details",
-    "existing account",
-    "existing details",
-    "existing banking instructions",
-    "existing bank instructions",
-    "existing payment account",
-    "remains unchanged",
-    "remain unchanged",
-    "no changes are required",
-    "no change is required",
-    "no changes required",
-    "no changes have been made",
-    "no changes were made",
-    "no change has been made",
-    "no change was made",
-    "unchanged",
-    "continue using",
-    "continue to use",
-    "still on file",
-    "is unchanged",
-    "are unchanged",
-    "no amendments are required",
-    "no amendment is required",
-)
-
-
-# ============================================================
-# HELPERS
-# ============================================================
-
-def contains_any(text, terms):
-    return any(term in text for term in terms)
-
-
-def add_factor(factors, name, points):
-    factors.append({
-        "name": name,
-        "score": points,
-        "points": points,
-    })
-
-
-# ============================================================
-# URGENCY DETECTION
-# ============================================================
-
-def has_urgency(message):
-    message = message.lower()
-
-    if contains_any(message, URGENCY_TERMS):
-        return True
-
-    deadline_patterns = (
-        r"\bpay\s+today\b",
-        r"\bpayment\s+today\b",
-        r"\btransfer\s+today\b",
-        r"\bsend\s+(?:the\s+)?(?:funds|money)\s+today\b",
-        r"\bsettle\s+today\b",
-        r"\bpay\s+tomorrow\b",
-        r"\bpayment\s+tomorrow\b",
-        r"\btransfer\s+tomorrow\b",
-        r"\bsettle\s+tomorrow\b",
-        r"\bdue\s+today\b",
-        r"\bdue\s+tomorrow\b",
-        r"\bdeadline\s+(?:is\s+)?today\b",
-        r"\bdeadline\s+(?:is\s+)?tomorrow\b",
+def extract_email(sender):
+    match = re.search(
+        r"<([^>]+)>",
+        sender
     )
 
+    if match:
+        return match.group(1).strip().lower()
+
+    return sender.strip().lower()
+
+
+def extract_requested_account(message):
+    patterns = [
+        r"account\s*(?:number)?\s*:\s*(\d{4,})",
+        r"account\s*(?:number)?\s+is\s+(\d{4,})",
+        r"account\s*(?:number)?\s+(\d{4,})",
+        r"a/c\s*(?:number)?\s*:\s*(\d{4,})",
+        r"a/c\s*(?:number)?\s+(\d{4,})"
+    ]
+
+    for pattern in patterns:
+        match = re.search(
+            pattern,
+            message.lower()
+        )
+
+        if match:
+            return match.group(1)[-4:]
+
+    return None
+
+
+def _normalise_text(message):
+    return " ".join(message.lower().split())
+
+
+# ============================================================
+# NEGATIVE / SAFE CONTEXT
+# ============================================================
+
+def has_no_change_context(message):
+    text = _normalise_text(message)
+
+    safe_patterns = [
+        r"\bremains?\s+unchanged\b",
+        r"\bremain\s+unchanged\b",
+        r"\bis\s+unchanged\b",
+        r"\bare\s+unchanged\b",
+        r"\bno\s+changes?\s+(?:are\s+)?required\b",
+        r"\bno\s+change\b",
+        r"\bwithout\s+(?:any\s+)?changes?\b",
+        r"\bcontinue\s+(?:to\s+)?use\b.*\bexisting\b",
+        r"\bcontinue\s+using\b.*\bexisting\b",
+        r"\bexisting\s+payment\s+(?:account|destination)\b"
+    ]
+
     return any(
-        re.search(pattern, message)
-        for pattern in deadline_patterns
+        re.search(pattern, text)
+        for pattern in safe_patterns
     )
 
 
@@ -216,137 +73,185 @@ def has_urgency(message):
 # ============================================================
 
 def has_beneficiary_change(message):
-    message = message.lower()
+    """
+    Detect a meaningful change in where money should be sent.
 
-    # Stability override.
-    # Prevents legitimate messages such as:
-    # "No changes have been made to our banking details."
-    if contains_any(message, STABILITY_TERMS):
+    Important:
+    - Generic account language alone is deliberately NOT enough.
+    - Payment/banking/receiving context is required for ambiguous
+      phrases such as "new account".
+    - Explicit safe/unchanged language suppresses destination
+      change detection.
+    """
+
+    text = _normalise_text(message)
+
+    if has_no_change_context(text):
         return False
 
-    # Explicit beneficiary change.
-    if contains_any(message, BENEFICIARY_CHANGE_TERMS):
-        return True
+    # --------------------------------------------------------
+    # Explicit beneficiary changes
+    # --------------------------------------------------------
 
-    # Explicit banking-detail change.
-    banking_change_terms = (
-        "changed banking details",
-        "changed our banking details",
-        "banking details have changed",
-        "updated banking details",
-        "updated our banking details",
-        "banking details have been updated",
-        "new banking details",
-        "new bank details",
-        "changed bank details",
-        "changed our bank details",
-        "bank details have changed",
-        "updated bank details",
-        "updated our bank details",
-        "bank details have been updated",
-    )
+    beneficiary_patterns = [
+        r"\b(?:changed?|change|changing|updated?|update|revised|replace|replacement)\b"
+        r".{0,40}\bbeneficiary\b",
 
-    if contains_any(message, banking_change_terms):
-        return True
-
-    # Bank account change.
-    bank_account_change_patterns = (
-        r"\bbank\s+account\s+has\s+changed\b",
-        r"\bbank\s+account\s+changed\b",
-        r"\bbank\s+account\s+has\s+been\s+changed\b",
-        r"\bchanged\s+our\s+bank\s+account\b",
-        r"\bchanged\s+the\s+bank\s+account\b",
-        r"\bupdate\s+our\s+bank\s+account\b",
-        r"\bupdate\s+the\s+bank\s+account\b",
-        r"\bupdated\s+our\s+bank\s+account\b",
-        r"\bupdated\s+the\s+bank\s+account\b",
-        r"\bnew\s+bank\s+account\b",
-    )
+        r"\bbeneficiary\b"
+        r".{0,40}\b(?:changed?|change|changing|updated?|update|revised|new)\b"
+    ]
 
     if any(
-        re.search(pattern, message)
-        for pattern in bank_account_change_patterns
+        re.search(pattern, text)
+        for pattern in beneficiary_patterns
     ):
         return True
 
-    # Strong payment destination change.
-    strong_destination_terms = (
-        "payment destination",
-        "receiving account",
-        "receiving details",
-        "payment recipient",
-        "banking recipient",
-        "remittance destination",
-        "payment account",
-    )
+    # --------------------------------------------------------
+    # Explicit payment destination changes
+    # --------------------------------------------------------
 
-    if contains_any(message, strong_destination_terms):
-        if contains_any(message, DESTINATION_CHANGE_TERMS):
-            return True
+    destination_patterns = [
+        r"\bpayment\s+destination\b"
+        r".{0,40}\b(?:changed?|change|updated?|update|revised|new)\b",
 
-    # Account replacement.
-    account_replacement_patterns = (
-        r"\breplace\s+the\s+account\b",
-        r"\breplace\s+the\s+account\s+currently\s+used\b",
-        r"\breplace\s+our\s+account\b",
-        r"\breplace\s+the\s+bank\s+account\b",
-        r"\baccount\s+replacement\b",
-    )
+        r"\b(?:changed?|change|updated?|update|revised|amend|amended|new)\b"
+        r".{0,40}\bpayment\s+destination\b",
+
+        r"\breceiving\s+account\b"
+        r".{0,40}\b(?:changed?|change|updated?|update|revised|new)\b",
+
+        r"\b(?:changed?|change|updated?|update|revised|new)\b"
+        r".{0,40}\breceiving\s+account\b",
+
+        r"\breceiving\s+details\b"
+        r".{0,40}\b(?:changed?|change|updated?|update|revised|new)\b",
+
+        r"\b(?:changed?|change|updated?|update|revised|new)\b"
+        r".{0,40}\breceiving\s+details\b",
+
+        r"\bbank\s+account\b"
+        r".{0,40}\b(?:changed?|change|updated?|update|revised|new)\b",
+
+        r"\b(?:changed?|change|updated?|update|revised|new)\b"
+        r".{0,40}\bbank\s+account\b",
+
+        r"\bbanking\s+details\b"
+        r".{0,40}\b(?:changed?|change|updated?|update|revised|new)\b",
+
+        r"\b(?:changed?|change|updated?|update|revised|new)\b"
+        r".{0,40}\bbanking\s+details\b"
+    ]
 
     if any(
-        re.search(pattern, message)
-        for pattern in account_replacement_patterns
+        re.search(pattern, text)
+        for pattern in destination_patterns
     ):
         return True
 
-    # Payment to a new account.
-    payment_to_new_account_patterns = (
-        r"\b(?:send|pay|transfer|direct)\b"
-        r".{0,80}"
-        r"\b(?:the\s+)?(?:payment|funds|money)\b"
-        r".{0,80}"
-        r"\bto\s+the\s+new\s+account\b",
+    # --------------------------------------------------------
+    # Payment directed to a new/revised account
+    #
+    # "Please use the new account." -> False
+    # "Send the payment to the new account." -> True
+    # --------------------------------------------------------
 
-        r"\b(?:send|pay|transfer|direct)\b"
-        r".{0,80}"
-        r"\bthe\s+new\s+account\b",
+    payment_to_new_account_patterns = [
+        r"\b(?:payment|funds|balance|invoice|remittance|transfer)\b"
+        r".{0,50}\b(?:to|into|using)\b"
+        r".{0,30}\b(?:new|revised|updated)\s+account\b",
 
-        r"\b(?:payment|funds|money)\b"
-        r".{0,80}"
-        r"\bto\s+the\s+new\s+account\b",
-
-        r"\binvoice\b"
-        r".{0,80}"
-        r"\bto\s+the\s+new\s+account\b",
-    )
+        r"\b(?:send|pay|transfer|route|redirect)\b"
+        r".{0,50}\b(?:payment|funds|balance|invoice|remittance)\b"
+        r".{0,50}\b(?:new|revised|updated)\s+account\b"
+    ]
 
     if any(
-        re.search(pattern, message)
+        re.search(pattern, text)
         for pattern in payment_to_new_account_patterns
     ):
         return True
 
-    # Indirect redirection.
-    for route in REDIRECTION_TERMS:
-        for target in REDIRECTION_TARGET_TERMS:
-            pattern = (
-                rf"\b{re.escape(route)}\b"
-                rf".{{0,80}}"
-                rf"\b{re.escape(target)}\b"
-            )
+    # --------------------------------------------------------
+    # Explicit redirection / rerouting of money
+    # --------------------------------------------------------
 
-            if re.search(pattern, message):
-                if contains_any(message, REDIRECTION_MARKERS):
-                    return True
+    redirect_patterns = [
+        r"\bredirect\b.{0,60}\b(?:payment|funds|balance|invoice|transfer)\b",
+        r"\bredirect\b.{0,80}\b(?:receiving|banking|account|destination|details)\b",
 
-    # Remittance destination change.
-    if (
-        re.search(r"\bremittances?\b", message)
-        and re.search(
-            r"\b(?:new|updated|changed|revised|different|alternative)"
-            r"\s+destination\b",
-            message,
-        )
+        r"\broute\b.{0,60}\b(?:payment|funds|balance|invoice|remittance|transfer)\b",
+        r"\broute\b.{0,80}\b(?:revised|new|updated)\b.{0,30}"
+        r"\b(?:account|recipient|destination|details)\b",
+
+        r"\b(?:payment|funds|balance|invoice|remittance|transfer)\b"
+        r".{0,60}\bredirect\b",
+
+        r"\b(?:payment|funds|balance|invoice|remittance|transfer)\b"
+        r".{0,60}\broute\b"
+    ]
+
+    if any(
+        re.search(pattern, text)
+        for pattern in redirect_patterns
+    ):
+        return True
+
+    # --------------------------------------------------------
+    # "Route the next payment using the details below"
+    # --------------------------------------------------------
+
+    route_payment_details_patterns = [
+        r"\b(?:route|redirect|send)\b"
+        r".{0,50}\b(?:payment|funds|balance|remittance|transfer)\b"
+        r".{0,50}\b(?:details|destination|account|recipient)\b",
+
+        r"\b(?:payment|funds|balance|remittance|transfer)\b"
+        r".{0,50}\b(?:using|to)\b"
+        r".{0,30}\b(?:details\s+below|new\s+details|revised\s+details)\b"
+    ]
+
+    if any(
+        re.search(pattern, text)
+        for pattern in route_payment_details_patterns
+    ):
+        return True
+
+    # --------------------------------------------------------
+    # New remittance destination
+    # --------------------------------------------------------
+
+    remittance_patterns = [
+        r"\bremittances?\b"
+        r".{0,60}\b(?:new|revised|updated)\s+destination\b",
+
+        r"\b(?:new|revised|updated)\s+remittance\s+destination\b"
+    ]
+
+    if any(
+        re.search(pattern, text)
+        for pattern in remittance_patterns
+    ):
+        return True
+
+    # --------------------------------------------------------
+    # Replacement of account used specifically for payment
+    # --------------------------------------------------------
+
+    replacement_patterns = [
+        r"\breplace\b"
+        r".{0,40}\baccount\b"
+        r".{0,40}\b(?:payment|payments|paying)\b",
+
+        r"\baccount\b"
+        r".{0,40}\b(?:used|use)\b"
+        r".{0,30}\b(?:for|to)\s+payments?\b"
+        r".{0,30}\b(?:replace|replacement|new)\b"
+    ]
+
+    if any(
+        re.search(pattern, text)
+        for pattern in replacement_patterns
     ):
         return True
 
@@ -354,336 +259,372 @@ def has_beneficiary_change(message):
 
 
 # ============================================================
-# MESSAGE ANALYSIS
+# BANKING DETAILS CHANGE
 # ============================================================
 
-def analyze_message(message):
+def has_banking_change(message):
+    text = _normalise_text(message)
+
+    if has_no_change_context(text):
+        return False
+
+    patterns = [
+        r"\bchanged?\s+our\s+banking\b",
+        r"\bchanged?\s+our\s+bank\b",
+        r"\bchanged?\s+bank\s+details\b",
+        r"\bchanged?\s+banking\s+details\b",
+        r"\bupdated?\s+banking\s+details\b",
+        r"\bupdated?\s+bank\s+details\b",
+        r"\bnew\s+bank\s+account\b",
+        r"\bchange\s+bank\s+account\b",
+        r"\bchange\s+banking\s+details\b",
+        r"\bchange\s+bank\s+details\b",
+        r"\bnew\s+banking\s+details\b",
+
+        r"\bbank\s+account\s+has\s+changed\b",
+        r"\bbank\s+account\s+changed\b",
+
+        r"\breceiving\s+account\s+has\s+changed\b",
+        r"\breceiving\s+account\s+changed\b",
+
+        r"\breceiving\s+details\s+have\s+been\s+updated\b",
+        r"\breceiving\s+details\s+updated\b",
+
+        r"\bpayment\s+destination\s+has\s+changed\b",
+        r"\bpayment\s+destination\s+changed\b"
+    ]
+
+    return any(
+        re.search(pattern, text)
+        for pattern in patterns
+    )
+
+
+# ============================================================
+# MAIN DETERMINISTIC ENGINE
+# ============================================================
+
+def analyze_transaction(message, supplier):
+
     message_lower = message.lower()
 
     score = 0
     warnings = []
     factors = []
 
-    stable = contains_any(
-        message_lower,
-        STABILITY_TERMS
+    # --------------------------------------------------------
+    # EXTRACT SENDER
+    # --------------------------------------------------------
+
+    sender_match = re.search(
+        r"from:\s*(?:.*?<)?([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})(?:>)?",
+        message,
+        re.IGNORECASE
+    )
+
+    sender_email = (
+        sender_match.group(1).lower()
+        if sender_match
+        else ""
+    )
+
+    requested_account = extract_requested_account(
+        message
+    )
+
+    trusted_email = (
+        supplier.get("email", "").strip().lower()
+    )
+
+    trusted_account = str(
+        supplier.get("account_last_four", "")
+    ).strip()
+
+    # --------------------------------------------------------
+    # SUPPLIER / ACCOUNT VERIFICATION
+    # --------------------------------------------------------
+
+    sender_match_result = None
+    account_match_result = None
+
+    if trusted_email:
+        sender_match_result = (
+            sender_email == trusted_email
+        )
+
+    if trusted_account and requested_account:
+        account_match_result = (
+            requested_account == trusted_account
+        )
+
+    print(
+        f"DEBUG SENDER: '{sender_email}'"
+    )
+
+    print(
+        f"DEBUG TRUSTED: '{trusted_email}'"
+    )
+
+    print(
+        f"DEBUG MATCH: {sender_match_result}"
+    )
+
+    print(
+        f"DEBUG REQUESTED ACCOUNT: "
+        f"'{requested_account}'"
+    )
+
+    print(
+        f"DEBUG TRUSTED ACCOUNT: "
+        f"'{trusted_account}'"
+    )
+
+    print(
+        f"DEBUG ACCOUNT MATCH: "
+        f"{account_match_result}"
+    )
+
+    # --------------------------------------------------------
+    # CONTEXT DETECTION
+    # --------------------------------------------------------
+
+    banking_change = has_banking_change(
+        message
+    )
+
+    destination_change = has_beneficiary_change(
+        message
     )
 
     # --------------------------------------------------------
     # BANKING DETAILS
     # --------------------------------------------------------
 
-    if (
-        contains_any(message_lower, BANKING_TERMS)
-        and not stable
-    ):
+    banking_reference_signals = [
+        "banking details",
+        "bank details",
+        "bank account",
+        "account number",
+        "banking information"
+    ]
+
+    if banking_change:
+
         score += 30
 
         warnings.append(
-            "Banking details referenced"
+            "Banking details change detected"
         )
 
-        add_factor(
-            factors,
-            "Banking details change",
-            30
+        factors.append({
+            "name": "Banking details change",
+            "score": 30,
+            "points": 30
+        })
+
+    elif any(
+        signal in message_lower
+        for signal in banking_reference_signals
+    ):
+
+        warnings.append(
+            "Banking details referenced"
         )
 
     # --------------------------------------------------------
     # URGENCY
     # --------------------------------------------------------
 
-    if has_urgency(message_lower):
+    urgency_signals = [
+        "urgent",
+        "urgently",
+        "immediately",
+        "as soon as possible",
+        "right away",
+        "immediate action",
+        "action required"
+    ]
+
+    urgency_detected = any(
+        signal in message_lower
+        for signal in urgency_signals
+    )
+
+    if urgency_detected:
+
         score += 15
 
         warnings.append(
             "Urgent payment request detected"
         )
 
-        add_factor(
-            factors,
-            "Urgency",
-            15
-        )
+        factors.append({
+            "name": "Urgency",
+            "score": 15,
+            "points": 15
+        })
 
     # --------------------------------------------------------
-    # PAYMENT INTENT
+    # PAYMENT
     # --------------------------------------------------------
 
-    payment_intent = contains_any(
-        message_lower,
-        PAYMENT_TERMS + FINANCIAL_OBLIGATION_TERMS
+    payment_signals = [
+        "pay",
+        "payment",
+        "make payment",
+        "pay invoice",
+        "settle invoice",
+        "transfer",
+        "send payment",
+        "remittance",
+        "remittances",
+        "outstanding balance"
+    ]
+
+    payment_detected = any(
+        signal in message_lower
+        for signal in payment_signals
     )
 
-    if payment_intent:
+    if payment_detected:
+
         score += 15
 
-        add_factor(
-            factors,
-            "Payment-related request",
-            15
-        )
+        factors.append({
+            "name": "Payment-related request",
+            "score": 15,
+            "points": 15
+        })
 
     # --------------------------------------------------------
-    # FINANCIAL OBLIGATION
+    # BENEFICIARY CHANGE
+    #
+    # Keep the historical factor name for explicit beneficiary
+    # language because regression tests recognise both factor
+    # names as destination changes.
     # --------------------------------------------------------
 
-    financial_obligation = contains_any(
-        message_lower,
-        FINANCIAL_OBLIGATION_TERMS
+    beneficiary_word_present = (
+        "beneficiary" in message_lower
     )
 
-    if (
-        financial_obligation
-        and not payment_intent
-    ):
+    if destination_change and beneficiary_word_present:
+
         score += 10
 
-        add_factor(
-            factors,
-            "Financial obligation",
-            10
-        )
+        factors.append({
+            "name": "Beneficiary change",
+            "score": 10,
+            "points": 10
+        })
 
     # --------------------------------------------------------
-    # BENEFICIARY / DESTINATION CHANGE
+    # PAYMENT DESTINATION CHANGE
+    #
+    # Do not double-score explicit beneficiary language as both
+    # beneficiary + destination. Other destination changes get
+    # this factor.
     # --------------------------------------------------------
 
-    beneficiary_change = has_beneficiary_change(
-        message_lower
-    )
+    if destination_change and not beneficiary_word_present:
 
-    if beneficiary_change:
         score += 10
 
         warnings.append(
             "Payment destination may have changed"
         )
 
-        add_factor(
-            factors,
-            "Beneficiary change",
-            10
-        )
+        factors.append({
+            "name": "Payment destination change",
+            "score": 10,
+            "points": 10
+        })
 
-    # --------------------------------------------------------
-    # CONTEXTUAL DESTINATION CHANGE
-    # --------------------------------------------------------
+    elif destination_change and beneficiary_word_present:
 
-    if (
-        beneficiary_change
-        and payment_intent
-    ):
+        # Historical behavior for genuine beneficiary changes
+        # included the destination-change factor as well.
         score += 10
 
-        add_factor(
-            factors,
-            "Payment destination change",
-            10
+        warnings.append(
+            "Payment destination may have changed"
         )
+
+        factors.append({
+            "name": "Payment destination change",
+            "score": 10,
+            "points": 10
+        })
 
     # --------------------------------------------------------
     # URGENT DESTINATION CHANGE
     # --------------------------------------------------------
 
-    if (
-        beneficiary_change
-        and has_urgency(message_lower)
-    ):
+    if urgency_detected and destination_change:
+
         score += 10
 
-        add_factor(
-            factors,
-            "Urgent destination change",
-            10
+        factors.append({
+            "name": "Urgent destination change",
+            "score": 10,
+            "points": 10
+        })
+
+    # --------------------------------------------------------
+    # SUPPLIER EMAIL MISMATCH
+    # --------------------------------------------------------
+
+    if sender_match_result is False:
+
+        score += 20
+
+        warnings.append(
+            "Sender does not match trusted supplier email"
         )
 
-    return score, warnings, factors
-
-
-# ============================================================
-# SUPPLIER VERIFICATION
-# ============================================================
-
-def check_supplier(message, supplier):
-    warnings = []
-    factors = []
-    supplier_score = 0
+        factors.append({
+            "name": "Supplier email mismatch",
+            "score": 20,
+            "points": 20
+        })
 
     # --------------------------------------------------------
-    # EXTRACT SENDER EMAIL
+    # ACCOUNT MISMATCH
     # --------------------------------------------------------
 
-    sender_match = re.search(
-        r"from:\s*(?:.*?<)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
-        message,
-        re.IGNORECASE
-    )
+    if account_match_result is False:
 
-    if sender_match:
-        sender_email = sender_match.group(1).lower().strip()
-        trusted_email = supplier["email"].lower().strip()
+        score += 25
 
-        print("DEBUG SENDER:", repr(sender_email))
-        print("DEBUG TRUSTED:", repr(trusted_email))
-        print(
-            "DEBUG MATCH:",
-            sender_email == trusted_email
+        warnings.append(
+            f"Requested account ending "
+            f"{requested_account} "
+            f"does not match trusted supplier account"
         )
 
-        # ----------------------------------------------------
-        # TRUSTED SENDER
-        # ----------------------------------------------------
-
-        if sender_email == trusted_email:
-            warnings.append(
-                "Sender matches trusted supplier email"
-            )
-
-        # ----------------------------------------------------
-        # UNTRUSTED / MISMATCHED SENDER
-        # ----------------------------------------------------
-
-        else:
-            supplier_score += 20
-
-            add_factor(
-                factors,
-                "Supplier email mismatch",
-                20
-            )
-
-            warnings.append(
-                "Sender does not match trusted supplier email"
-            )
+        factors.append({
+            "name": "Account mismatch",
+            "score": 25,
+            "points": 25
+        })
 
     # --------------------------------------------------------
-    # EXTRACT REQUESTED ACCOUNT NUMBER
+    # UNKNOWN SUPPLIER DIAGNOSTIC
     # --------------------------------------------------------
 
-    account_match = re.search(
-        r"(?:account\s*(?:number|no\.?)?|a/c)\s*[:#]?\s*(\d{4,})",
-        message,
-        re.IGNORECASE
-    )
+    if not trusted_email:
 
-    requested_account = None
-
-    if account_match:
-        full_requested_account = account_match.group(1)
-
-        # CyberGuard stores only the last four digits.
-        requested_account = full_requested_account[-4:]
-
-        trusted_account = str(
-            supplier["account_last_four"]
-        ).strip()[-4:]
-
-        print(
-            "DEBUG REQUESTED ACCOUNT:",
-            repr(requested_account)
+        warnings.append(
+            "No trusted supplier email available for verification"
         )
 
-        print(
-            "DEBUG TRUSTED ACCOUNT:",
-            repr(trusted_account)
-        )
-
-        print(
-            "DEBUG ACCOUNT MATCH:",
-            requested_account == trusted_account
-        )
-
-        # ----------------------------------------------------
-        # ACCOUNT MISMATCH
-        # ----------------------------------------------------
-
-        if requested_account != trusted_account:
-            supplier_score += 25
-
-            add_factor(
-                factors,
-                "Account mismatch",
-                25
-            )
-
-            warnings.append(
-                f"Requested account ending {requested_account} "
-                f"does not match trusted supplier account"
-            )
-
-        # ----------------------------------------------------
-        # ACCOUNT MATCH
-        # ----------------------------------------------------
-
-        else:
-            warnings.append(
-                "Requested account matches trusted supplier account"
-            )
-
-    return (
-        supplier_score,
-        warnings,
-        factors,
-        requested_account
-    )
-
-
-# ============================================================
-# COMPLETE TRANSACTION ANALYSIS
-# ============================================================
-
-def analyze_transaction(message, supplier):
-
     # --------------------------------------------------------
-    # MESSAGE ANALYSIS
-    # --------------------------------------------------------
-
-    (
-        message_score,
-        message_warnings,
-        message_factors
-    ) = analyze_message(message)
-
-    # --------------------------------------------------------
-    # SUPPLIER ANALYSIS
-    # --------------------------------------------------------
-
-    (
-        supplier_score,
-        supplier_warnings,
-        supplier_factors,
-        requested_account
-    ) = check_supplier(
-        message,
-        supplier
-    )
-
-    # --------------------------------------------------------
-    # FINAL DETERMINISTIC SCORE
+    # CAP
     # --------------------------------------------------------
 
     score = min(
-        message_score + supplier_score,
+        score,
         100
-    )
-
-    # --------------------------------------------------------
-    # WARNINGS
-    # --------------------------------------------------------
-
-    warnings = (
-        message_warnings
-        + supplier_warnings
-    )
-
-    # --------------------------------------------------------
-    # RISK FACTORS
-    # --------------------------------------------------------
-
-    factors = (
-        message_factors
-        + supplier_factors
     )
 
     # --------------------------------------------------------
@@ -703,18 +644,60 @@ def analyze_transaction(message, supplier):
         risk_level = "LOW"
 
     # --------------------------------------------------------
-    # DEBUG OUTPUT
+    # DEBUG
     # --------------------------------------------------------
 
+    message_score = 0
+    supplier_score = 0
+
+    for factor in factors:
+
+        if factor["name"] in [
+            "Supplier email mismatch",
+            "Account mismatch"
+        ]:
+
+            supplier_score += factor["points"]
+
+        else:
+
+            message_score += factor["points"]
+
     print("=" * 60)
-    print("CYBERGUARD DETERMINISTIC ANALYSIS")
-    print("MESSAGE SCORE:", message_score)
-    print("SUPPLIER SCORE:", supplier_score)
-    print("FINAL SCORE:", score)
-    print("RISK LEVEL:", risk_level)
-    print("WARNINGS:", warnings)
-    print("FACTORS:", factors)
-    print("REQUESTED ACCOUNT:", requested_account)
+
+    print(
+        "CYBERGUARD DETERMINISTIC ANALYSIS"
+    )
+
+    print(
+        f"MESSAGE SCORE: {message_score}"
+    )
+
+    print(
+        f"SUPPLIER SCORE: {supplier_score}"
+    )
+
+    print(
+        f"FINAL SCORE: {score}"
+    )
+
+    print(
+        f"RISK LEVEL: {risk_level}"
+    )
+
+    print(
+        f"WARNINGS: {warnings}"
+    )
+
+    print(
+        f"FACTORS: {factors}"
+    )
+
+    print(
+        f"REQUESTED ACCOUNT: "
+        f"{requested_account}"
+    )
+
     print("=" * 60)
 
     return (

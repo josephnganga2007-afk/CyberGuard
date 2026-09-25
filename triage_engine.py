@@ -59,6 +59,7 @@ FINANCIAL_DOCUMENTS = [
 
 BANKING_SIGNALS = [
     "banking details",
+    "banking information",
     "bank details",
     "bank account",
     "account number",

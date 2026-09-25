@@ -1,309 +1,339 @@
 import sqlite3
 
-
 DATABASE = "cyberguard.db"
 
 
+
 def get_connection():
-    return sqlite3.connect(DATABASE)
+
+    conn=sqlite3.connect(DATABASE); conn.row_factory=sqlite3.Row
+
+    conn.execute("PRAGMA foreign_keys = ON"); return conn
+
 
 
 def initialize_database():
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn=get_connection(); c=conn.cursor()
 
-    # Supplier table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS suppliers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            account_last_four TEXT NOT NULL
-        )
-    """)
+    c.execute("""CREATE TABLE IF NOT EXISTS suppliers (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,email TEXT,account_last_four TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
 
-    # Transaction history table
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        supplier_name TEXT NOT NULL,
-        message TEXT NOT NULL,
-        risk_score INTEGER NOT NULL,
-        risk_level TEXT NOT NULL,
-        requested_account TEXT,
-        transaction_type TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-""")
+    c.execute("""CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY AUTOINCREMENT,supplier_name TEXT NOT NULL,message TEXT NOT NULL,risk_score INTEGER NOT NULL,risk_level TEXT NOT NULL,requested_account TEXT,transaction_type TEXT DEFAULT 'LIVE',created_at TEXT DEFAULT CURRENT_TIMESTAMP,gmail_message_id TEXT,business_id INTEGER)""")
 
-    conn.commit()
-    conn.close()
+    c.execute("""CREATE TABLE IF NOT EXISTS investigations (id INTEGER PRIMARY KEY AUTOINCREMENT,supplier_name TEXT NOT NULL,sender TEXT,subject TEXT,message TEXT NOT NULL,requested_account TEXT,risk_score INTEGER,risk_level TEXT,status TEXT DEFAULT 'PENDING',created_at TEXT DEFAULT CURRENT_TIMESTAMP,reviewed_at TEXT,review_decision TEXT,business_id INTEGER,gmail_message_id TEXT)""")
+
+    c.execute("""CREATE TABLE IF NOT EXISTS businesses (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,gmail_account TEXT,created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+
+    c.execute("""CREATE TABLE IF NOT EXISTS business_suppliers (id INTEGER PRIMARY KEY AUTOINCREMENT,business_id INTEGER NOT NULL,supplier_id INTEGER NOT NULL,created_at TEXT DEFAULT CURRENT_TIMESTAMP,UNIQUE(business_id,supplier_id),FOREIGN KEY(business_id) REFERENCES businesses(id) ON DELETE CASCADE,FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE)""")
+
+    for sql in ("ALTER TABLE transactions ADD COLUMN gmail_message_id TEXT","ALTER TABLE transactions ADD COLUMN business_id INTEGER","ALTER TABLE investigations ADD COLUMN business_id INTEGER","ALTER TABLE investigations ADD COLUMN gmail_message_id TEXT","ALTER TABLE businesses ADD COLUMN gmail_account TEXT"):
+
+        try: c.execute(sql)
+
+        except sqlite3.OperationalError: pass
+
+    for sql in ("CREATE INDEX IF NOT EXISTS idx_transactions_business ON transactions(business_id)","CREATE INDEX IF NOT EXISTS idx_transactions_gmail ON transactions(gmail_message_id)","CREATE INDEX IF NOT EXISTS idx_investigations_business ON investigations(business_id)","CREATE INDEX IF NOT EXISTS idx_investigations_gmail ON investigations(gmail_message_id)","CREATE INDEX IF NOT EXISTS idx_investigations_status ON investigations(status)"): c.execute(sql)
+
+    conn.commit(); conn.close()
 
 
-def add_supplier(name, email, account_last_four):
 
-    conn = get_connection()
-    cursor = conn.cursor()
+def add_supplier(name,email=None,account_last_four=None):
 
-    cursor.execute("""
-        INSERT INTO suppliers
-        (name, email, account_last_four)
-        VALUES (?, ?, ?)
-    """, (
-        name,
-        email,
-        account_last_four
-    ))
-
-    conn.commit()
-    conn.close()
-
+    conn=get_connection(); c=conn.cursor(); c.execute("INSERT INTO suppliers(name,email,account_last_four) VALUES(?,?,?)",(name,email,account_last_four)); i=c.lastrowid; conn.commit(); conn.close(); return i
 
 def get_supplier(name):
 
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT name, email, account_last_four
-        FROM suppliers
-        WHERE name = ?
-        LIMIT 1
-    """, (name,))
-
-    supplier = cursor.fetchone()
-
-    conn.close()
-
-    if supplier:
-
-        return {
-            "name": supplier[0],
-            "email": supplier[1],
-            "account_last_four": supplier[2]
-        }
-
-    return None
-
+    conn=get_connection(); r=conn.execute("SELECT * FROM suppliers WHERE name=? LIMIT 1",(name,)).fetchone(); conn.close(); return r
 
 def get_all_suppliers():
 
+    conn=get_connection(); r=conn.execute("SELECT * FROM suppliers ORDER BY name").fetchall(); conn.close(); return r
+
+def get_supplier_by_email(email):
+    if not email:
+        return None
     conn = get_connection()
-    cursor = conn.cursor()
+    row = conn.execute(
+        "SELECT * FROM suppliers WHERE LOWER(email)=LOWER(?) LIMIT 1",
+        (email.strip(),)
+    ).fetchone()
+    conn.close()
+    return row
 
-    cursor.execute("""
-        SELECT id, name
-        FROM suppliers
-        GROUP BY name
-        ORDER BY name
-    """)
+def get_supplier_for_business(business_id, supplier_identifier):
+    if not supplier_identifier:
+        return None
 
-    suppliers = cursor.fetchall()
+    conn = get_connection()
+
+    row = conn.execute(
+        """
+        SELECT s.*
+        FROM suppliers s
+        JOIN business_suppliers bs
+            ON bs.supplier_id = s.id
+        WHERE bs.business_id = ?
+          AND (
+                LOWER(s.name) = LOWER(?)
+                OR LOWER(s.email) = LOWER(?)
+              )
+        LIMIT 1
+        """,
+        (
+            business_id,
+            supplier_identifier.strip(),
+            supplier_identifier.strip()
+        )
+    ).fetchone()
 
     conn.close()
 
-    return suppliers
+    if row is None:
+        return None
+
+    return dict(row)
+def get_supplier_history(supplier_name,business_id=None):
+
+    conn=get_connection()
+
+    if business_id is None: r=conn.execute("SELECT * FROM transactions WHERE supplier_name=? ORDER BY created_at DESC",(supplier_name,)).fetchall()
+
+    else: r=conn.execute("SELECT * FROM transactions WHERE supplier_name=? AND business_id=? ORDER BY created_at DESC",(supplier_name,business_id)).fetchall()
+
+    conn.close(); return r
 
 
-def save_transaction(
+
+def save_transaction(supplier_name,message,risk_score,risk_level,requested_account=None,transaction_type="LIVE",gmail_message_id=None,business_id=None):
+
+    conn=get_connection(); c=conn.cursor(); c.execute("INSERT INTO transactions(supplier_name,message,risk_score,risk_level,requested_account,transaction_type,gmail_message_id,business_id) VALUES(?,?,?,?,?,?,?,?)",(supplier_name,message,risk_score,risk_level,requested_account,transaction_type,gmail_message_id,business_id)); i=c.lastrowid; conn.commit(); conn.close(); return i
+
+def gmail_message_exists(gmail_message_id,business_id=None):
+
+    if not gmail_message_id:return False
+
+    conn=get_connection()
+
+    if business_id is None:r=conn.execute("SELECT id FROM transactions WHERE gmail_message_id=? LIMIT 1",(gmail_message_id,)).fetchone()
+
+    else:r=conn.execute("SELECT id FROM transactions WHERE gmail_message_id=? AND business_id=? LIMIT 1",(gmail_message_id,business_id)).fetchone()
+
+    conn.close(); return r is not None
+
+def get_transaction_stats(business_id=None):
+
+    conn=get_connection()
+
+    if business_id is None: rows=conn.execute("SELECT risk_level,COUNT(*) count FROM transactions GROUP BY risk_level").fetchall()
+
+    else: rows=conn.execute("SELECT risk_level,COUNT(*) count FROM transactions WHERE business_id=? GROUP BY risk_level",(business_id,)).fetchall()
+
+    s={"total_transactions":0,"low_risk":0,"medium_risk":0,"high_risk_transactions":0,"critical_risk":0}
+
+    for r in rows:
+
+        n=r["count"]; s["total_transactions"]+=n
+
+        if r["risk_level"]=="LOW":s["low_risk"]+=n
+
+        elif r["risk_level"]=="MEDIUM":s["medium_risk"]+=n
+
+        elif r["risk_level"]=="HIGH":s["high_risk_transactions"]+=n
+
+        elif r["risk_level"]=="CRITICAL":s["critical_risk"]+=n
+
+    conn.close(); return s
+
+def get_recent_transactions(limit=50,business_id=None):
+
+    conn=get_connection()
+
+    if business_id is None:r=conn.execute("SELECT * FROM transactions ORDER BY created_at DESC LIMIT ?",(limit,)).fetchall()
+
+    else:r=conn.execute("SELECT * FROM transactions WHERE business_id=? ORDER BY created_at DESC LIMIT ?",(business_id,limit)).fetchall()
+
+    conn.close(); return r
+
+def get_business_transactions(business_id,limit=50): return get_recent_transactions(limit,business_id)
+
+def get_supplier_risk_trend(supplier_name,limit=10,business_id=None):
+
+    conn=get_connection()
+
+    if business_id is None:r=conn.execute("SELECT risk_score,risk_level,created_at FROM transactions WHERE supplier_name=? ORDER BY created_at DESC LIMIT ?",(supplier_name,limit)).fetchall()
+
+    else:r=conn.execute("SELECT risk_score,risk_level,created_at FROM transactions WHERE supplier_name=? AND business_id=? ORDER BY created_at DESC LIMIT ?",(supplier_name,business_id,limit)).fetchall()
+
+    conn.close(); return r
+
+def get_supplier_trust_score(supplier_name,business_id=None):
+
+    h=get_supplier_history(supplier_name,business_id)
+
+    return 100 if not h else max(0,round(100-sum(x["risk_score"] for x in h)/len(h)))
+
+
+
+def investigation_exists(gmail_message_id=None,business_id=None):
+
+    if not gmail_message_id:return False
+
+    conn=get_connection()
+
+    if business_id is None:r=conn.execute("SELECT id FROM investigations WHERE gmail_message_id=? LIMIT 1",(gmail_message_id,)).fetchone()
+
+    else:r=conn.execute("SELECT id FROM investigations WHERE gmail_message_id=? AND business_id=? LIMIT 1",(gmail_message_id,business_id)).fetchone()
+
+    conn.close(); return r is not None
+
+def save_investigation(
     supplier_name,
+    sender,
+    subject,
     message,
+    requested_account,
     risk_score,
     risk_level,
-    requested_account,
-    transaction_type="LIVE"
+    status="PENDING",
+    business_id=None,
+    gmail_message_id=None,
+    triage_reason=None,
+    triage_signals=None
 ):
-
     conn = get_connection()
-    cursor = conn.cursor()
+    c = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO transactions
-        (
+    # Convert signal lists into readable text for SQLite.
+    if isinstance(triage_signals, (list, tuple)):
+        triage_signals = ", ".join(str(signal) for signal in triage_signals)
+
+    c.execute(
+        """
+        INSERT INTO investigations (
             supplier_name,
+            sender,
+            subject,
             message,
+            requested_account,
             risk_score,
             risk_level,
-            requested_account,
-            transaction_type
+            status,
+            business_id,
+            gmail_message_id,
+            triage_reason,
+            triage_signals
         )
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        supplier_name,
-        message,
-        risk_score,
-        risk_level,
-        requested_account,
-        transaction_type
-    ))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            supplier_name,
+            sender,
+            subject,
+            message,
+            requested_account,
+            risk_score,
+            risk_level,
+            status,
+            business_id,
+            gmail_message_id,
+            triage_reason,
+            triage_signals
+        )
+    )
+
+    investigation_id = c.lastrowid
 
     conn.commit()
     conn.close()
 
-def get_supplier_history(supplier_name):
+    return investigation_id
+def get_pending_investigations(business_id=None):
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    conn=get_connection()
 
-    cursor.execute("""
-        SELECT
-            id,
-            message,
-            risk_score,
-            risk_level,
-            requested_account,
-            transaction_type,
-            created_at
-        FROM transactions
-        WHERE supplier_name = ?
-        ORDER BY id DESC
-    """, (supplier_name,))
+    if business_id is None:r=conn.execute("SELECT * FROM investigations WHERE status='PENDING' ORDER BY created_at DESC").fetchall()
 
-    history = cursor.fetchall()
+    else:r=conn.execute("SELECT * FROM investigations WHERE status='PENDING' AND business_id=? ORDER BY created_at DESC",(business_id,)).fetchall()
 
-    conn.close()
+    conn.close(); return r
 
-    return history
+def review_investigation(investigation_id,decision,reviewer_notes=None,business_id=None):
 
-def get_transaction_stats():
+    d=decision.upper()
 
-    conn = get_connection()
-    cursor = conn.cursor()
+    if d=="LEGITIMATE": status="APPROVE"
 
-    # Total transactions
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM transactions
-    """)
+    elif d=="SUSPICIOUS": status="REJECT"
 
-    total_transactions = cursor.fetchone()[0]
+    elif d in ("APPROVE","REJECT"): status=d
 
-    # High / Critical transactions
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM transactions
-        WHERE risk_level IN ('HIGH', 'CRITICAL')
-    """)
+    else:return False
 
-    high_risk_transactions = cursor.fetchone()[0]
+    stored=f"{status}: {reviewer_notes}" if reviewer_notes else status
 
-    # Trusted suppliers
-    cursor.execute("""
-        SELECT COUNT(DISTINCT name)
-        FROM suppliers
-    """)
+    conn=get_connection(); c=conn.cursor()
 
-    total_suppliers = cursor.fetchone()[0]
+    if business_id is None:c.execute("UPDATE investigations SET status=?,review_decision=?,reviewed_at=CURRENT_TIMESTAMP WHERE id=?",(status,stored,investigation_id))
 
-    conn.close()
+    else:c.execute("UPDATE investigations SET status=?,review_decision=?,reviewed_at=CURRENT_TIMESTAMP WHERE id=? AND business_id=?",(status,stored,investigation_id,business_id))
 
-    return {
-        "total_transactions": total_transactions,
-        "high_risk_transactions": high_risk_transactions,
-        "total_suppliers": total_suppliers
-    }
-
-def get_recent_transactions(limit=10):
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT
-            supplier_name,
-            risk_score,
-            risk_level,
-            requested_account,
-            created_at
-        FROM transactions
-        WHERE transaction_type = 'LIVE'
-        ORDER BY id DESC
-        LIMIT ?
-    """, (limit,))
-
-    transactions = cursor.fetchall()
-
-    conn.close()
-
-    return transactions    
+    changed=c.rowcount>0; conn.commit(); conn.close(); return changed
 
 
-def get_supplier_risk_trend(supplier_name):
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT
-            risk_score,
-            risk_level,
-            created_at
-        FROM transactions
-        WHERE supplier_name = ?
-        ORDER BY id ASC
-    """, (supplier_name,))
+def create_business(name,gmail_account=None):
 
-    trend = cursor.fetchall()
+    conn=get_connection(); c=conn.cursor(); c.execute("INSERT INTO businesses(name,gmail_account) VALUES(?,?)",(name,gmail_account)); i=c.lastrowid; conn.commit(); conn.close(); return i
 
-    conn.close()
+def get_business_by_id(business_id):
 
-    return trend    
+    conn=get_connection(); r=conn.execute("SELECT * FROM businesses WHERE id=?",(business_id,)).fetchone(); conn.close(); return r
 
-def get_supplier_trust_score(supplier_name):
-    conn = get_connection()
-    cursor = conn.cursor()
+def get_business(business_id):return get_business_by_id(business_id)
 
-    cursor.execute("""
-        SELECT
-            risk_score,
-            transaction_type
-        FROM transactions
-        WHERE supplier_name = ?
-        ORDER BY id DESC
-    """, (supplier_name,))
+def get_all_businesses():
 
-    transactions = cursor.fetchall()
-    conn.close()
+    conn=get_connection(); r=conn.execute("SELECT * FROM businesses ORDER BY name").fetchall(); conn.close(); return r
 
-    live_scores = [
-        transaction[0]
-        for transaction in transactions
-        if transaction[1] == "LIVE"
-    ]
+def set_business_gmail_account(business_id,gmail_account):
 
-    if not live_scores:
-        return {
-            "score": 100,
-            "label": "NEW SUPPLIER",
-            "description": "No transaction history available yet."
-        }
+    conn=get_connection(); conn.execute("UPDATE businesses SET gmail_account=? WHERE id=?",(gmail_account,business_id)); conn.commit(); conn.close()
 
-    # Calculate the average historical risk.
-    average_risk = sum(live_scores) / len(live_scores)
+def get_business_by_gmail_account(gmail_account):
 
-    # Convert risk into trust.
-    score = round(100 - average_risk)
+    if not gmail_account:return None
 
-    score = max(0, min(score, 100))
+    conn=get_connection(); r=conn.execute("SELECT * FROM businesses WHERE gmail_account=? LIMIT 1",(gmail_account,)).fetchone(); conn.close(); return r
 
-    if score >= 80:
-        label = "HIGH TRUST"
-        description = (
-            "Supplier behaviour has remained largely consistent."
-        )
-    elif score >= 60:
-        label = "MODERATE TRUST"
-        description = (
-            "Some unusual activity has been detected."
-        )
-    else:
-        label = "LOW TRUST"
-        description = (
-            "Supplier history contains significant risk signals."
-        )
+def get_business_gmail(business_id):
 
-    return {
-        "score": score,
-        "label": label,
-        "description": description
-    }
+    b=get_business_by_id(business_id); return b["gmail_account"] if b else None
+
+def link_supplier_to_business(business_id,supplier_id):
+
+    conn=get_connection(); conn.execute("INSERT OR IGNORE INTO business_suppliers(business_id,supplier_id) VALUES(?,?)",(business_id,supplier_id)); conn.commit(); conn.close()
+
+def get_business_suppliers(business_id):
+
+    conn=get_connection(); r=conn.execute("SELECT s.* FROM suppliers s JOIN business_suppliers bs ON bs.supplier_id=s.id WHERE bs.business_id=? ORDER BY s.name",(business_id,)).fetchall(); conn.close(); return r
+
+def get_business_security_summary(business_id):
+
+    conn=get_connection()
+
+    total=conn.execute("SELECT COUNT(*) FROM transactions WHERE business_id=?",(business_id,)).fetchone()[0]
+
+    high=conn.execute("SELECT COUNT(*) FROM transactions WHERE business_id=? AND risk_level='HIGH'",(business_id,)).fetchone()[0]
+
+    critical=conn.execute("SELECT COUNT(*) FROM transactions WHERE business_id=? AND risk_level='CRITICAL'",(business_id,)).fetchone()[0]
+
+    pending=conn.execute("SELECT COUNT(*) FROM investigations WHERE business_id=? AND status='PENDING'",(business_id,)).fetchone()[0]
+
+    linked=conn.execute("SELECT COUNT(*) FROM business_suppliers WHERE business_id=?",(business_id,)).fetchone()[0]
+
+    conn.close(); return {"total_transactions":total,"high_risk":high,"critical":critical,"pending_investigations":pending,"linked_suppliers":linked}
+
+def get_business_investigations(business_id):
+
+    conn=get_connection(); r=conn.execute("SELECT * FROM investigations WHERE business_id=? ORDER BY created_at DESC",(business_id,)).fetchall(); conn.close(); return r
